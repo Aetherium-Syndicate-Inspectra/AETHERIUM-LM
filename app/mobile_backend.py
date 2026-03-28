@@ -49,6 +49,7 @@ class SyncRecord:
     user_id: str
     payload: Dict[str, Any]
     version: int
+    cursor: int
     updated_at: datetime
     deleted: bool = False
 
@@ -65,6 +66,7 @@ class DeviceRegistration:
 @dataclass
 class IdempotentResponse:
     status: int
+    request_fingerprint: str
     body: Dict[str, Any]
 
 
@@ -139,8 +141,25 @@ class MobileBackend:
     ) -> Dict[str, Any]:
         self._enforce_rate_limit(user_id)
         idem_key = (user_id, idempotency_key)
+        request_fingerprint = hashlib.sha256(
+            json.dumps(
+                {
+                    "item_id": item_id,
+                    "payload": payload,
+                    "expected_version": expected_version,
+                },
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
         if idem_key in self._idempotency:
-            return self._idempotency[idem_key].body
+            cached = self._idempotency[idem_key]
+            if cached.request_fingerprint != request_fingerprint:
+                raise ApiError(
+                    "IDEMPOTENCY_PAYLOAD_MISMATCH",
+                    "Idempotency key was already used with different request payload",
+                    409,
+                )
+            return cached.body
 
         current = self._sync_records.get(item_id)
         if current and current.user_id != user_id:
@@ -156,16 +175,17 @@ class MobileBackend:
 
         next_version = (current.version + 1) if current else 1
         now = datetime.now(timezone.utc)
+        self._cursor += 1
         record = SyncRecord(
             item_id=item_id,
             user_id=user_id,
             payload=payload,
             version=next_version,
+            cursor=self._cursor,
             updated_at=now,
             deleted=False,
         )
         self._sync_records[item_id] = record
-        self._cursor += 1
 
         body = {
             "item_id": item_id,
@@ -174,20 +194,25 @@ class MobileBackend:
             "etag": self._etag(record),
             "updated_at": now.isoformat(),
         }
-        self._idempotency[idem_key] = IdempotentResponse(status=200, body=body)
+        self._idempotency[idem_key] = IdempotentResponse(
+            status=200,
+            request_fingerprint=request_fingerprint,
+            body=body,
+        )
         return body
 
     def sync(self, user_id: str, cursor: int = 0, etag: Optional[str] = None, limit: int = 50) -> Dict[str, Any]:
         self._enforce_rate_limit(user_id)
         changes: List[Dict[str, Any]] = []
-        for rec in sorted(self._sync_records.values(), key=lambda r: r.version):
+        for rec in sorted(self._sync_records.values(), key=lambda r: r.cursor):
             if rec.user_id != user_id:
                 continue
-            if rec.version <= cursor:
+            if rec.cursor <= cursor:
                 continue
             item = {
                 "item_id": rec.item_id,
                 "version": rec.version,
+                "cursor": rec.cursor,
                 "payload": rec.payload,
                 "deleted": rec.deleted,
                 "etag": self._etag(rec),
@@ -203,7 +228,7 @@ class MobileBackend:
         if etag and etag == current_etag:
             return {"changes": [], "next_cursor": cursor, "etag": current_etag, "not_modified": True}
 
-        next_cursor = max([cursor] + [item["version"] for item in changes])
+        next_cursor = max([cursor] + [item["cursor"] for item in changes])
         return {"changes": changes, "next_cursor": next_cursor, "etag": current_etag, "not_modified": False}
 
     def send_push(self, user_id: str, title: str, body: str, notification_id: str) -> Dict[str, Any]:

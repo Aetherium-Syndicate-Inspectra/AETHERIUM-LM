@@ -51,6 +51,10 @@ Response `200`
 ```json
 {"item_id":"task-1","version":2,"cursor":9,"etag":"sha256","updated_at":"ISO8601"}
 ```
+If same idempotency key is reused with different payload `409`
+```json
+{"error":{"code":"IDEMPOTENCY_PAYLOAD_MISMATCH","message":"Idempotency key was already used with different request payload","details":{}}}
+```
 Conflict `409`
 ```json
 {"error":{"code":"SYNC_CONFLICT","message":"Version mismatch","details":{"server_version":2,"conflict_strategy":"client_merge_then_retry"}}}
@@ -60,11 +64,11 @@ Conflict `409`
 ### `GET /v1/sync?cursor=<int>&etag=<str>&limit=50`
 Response `200`
 ```json
-{"changes":[{"item_id":"task-1","version":2,"payload":{},"deleted":false,"etag":"...","updated_at":"..."}],"next_cursor":2,"etag":"hash","not_modified":false}
+{"changes":[{"item_id":"task-1","version":2,"cursor":9,"payload":{},"deleted":false,"etag":"...","updated_at":"..."}],"next_cursor":9,"etag":"hash","not_modified":false}
 ```
 If same ETag:
 ```json
-{"changes":[],"next_cursor":2,"etag":"hash","not_modified":true}
+{"changes":[],"next_cursor":9,"etag":"hash","not_modified":true}
 ```
 
 ## Push notifications
@@ -96,3 +100,7 @@ If duplicate notification_id per user:
 ## Conflict strategy
 - Use optimistic version checks (`If-Match-Version`).
 - On `409 SYNC_CONFLICT`: client fetches latest (`GET /v1/sync`), merges local pending state, retries with new idempotency key.
+
+## Cursor semantics
+- `version` is per-item optimistic locking version.
+- `cursor` is a global monotonic change sequence used for pagination/incremental sync.

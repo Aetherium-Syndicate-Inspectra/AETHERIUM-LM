@@ -32,11 +32,10 @@ AETHERIUM-LM is a platform for experimenting with asynchronous LLM integration a
 
 ## Platform update status
 
-Previously missing capability has now been implemented:
+Implemented capabilities:
 
 - Structured platform planning package generation (workstreams, options, risks, rollout/rollback, production DoD).
 - Database persistence for `Initiative -> Epic -> Story -> Task` entities.
-- Redundant suggestion text has been removed; this README reflects the current single source of truth.
 
 ## Notes
 
@@ -55,3 +54,23 @@ A production-oriented mobile backend reference implementation is included in `ap
 - Push deduplication across APNs/FCM notification fanout.
 
 See `docs/mobile_backend_api.md` for API contract and policies, and `scripts/simulate_duplicate_retry.py` for duplicate retry simulation.
+
+## Documentation language sections
+
+### English summary
+- Architecture and module scope are documented in `docs/mobile_backend_api.md` and `docs/architecture_reports/`.
+- Operational assumptions are aligned with tests in `tests/`.
+
+### สรุปภาษาไทย
+- สถาปัตยกรรมและขอบเขตโมดูลอธิบายใน `docs/mobile_backend_api.md` และ `docs/architecture_reports/`
+- สมมติฐานการทำงานของระบบอ้างอิงตรงกับชุดทดสอบใน `tests/`
+
+## Future roadmap (clear next steps)
+
+| Area | Planned enhancement | Why it matters |
+|---|---|---|
+| Auth | Refresh token + token revocation list | ลดความเสี่ยงจาก access token ที่รั่วไหล |
+| Sync | Tombstone retention policy + background compaction | ป้องกันข้อมูลโตเร็วจากรายการลบสะสม |
+| Idempotency | TTL cleanup for key cache | ควบคุม memory growth ในงานเขียนจำนวนมาก |
+| Push | Provider-level retry queue + DLQ | เพิ่มเสถียรภาพเมื่อ APNs/FCM ขัดข้องชั่วคราว |
+| Observability | Structured metrics for rate-limit/conflict trends | ช่วยปรับ capacity และ policy ได้จากข้อมูลจริง |
