@@ -145,7 +145,7 @@ class MobileBackend:
             json.dumps(
                 {
                     "item_id": item_id,
-                    "payload": payload,
+                    "payload": json.dumps(payload, sort_keys=True),
                     "expected_version": expected_version,
                 },
                 sort_keys=True,
