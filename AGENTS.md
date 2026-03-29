@@ -6,8 +6,8 @@
 
 ## Setup Commands
 
-- Install dependencies: `[package manager] install`
-- Start development server: `[command]`
+- Install dependencies: `pip install -r requirements.txt`
+- Start development server: `python main.py`
 - Build for production: `[command]`
 
 ## Development Workflow
