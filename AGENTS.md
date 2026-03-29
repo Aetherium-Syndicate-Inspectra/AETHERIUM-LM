@@ -1,4 +1,4 @@
-# AGENTS.md
+# Project Onboarding
 
 ## Project Overview
 
