@@ -18,7 +18,7 @@
 
 ## Testing Instructions
 
-- Run all tests: `[command]`
+- Run all tests: `pytest -q`
 - Run unit tests: `[command]`
 - Run integration tests: `[command]`
 - Test coverage: `[command]`
