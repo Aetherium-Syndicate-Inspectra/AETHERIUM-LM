@@ -37,7 +37,7 @@ def test_idempotency_key_returns_same_response_for_duplicate_submit():
     duplicate = backend.upsert_item(
         user_id=user_id,
         item_id="task-1",
-        payload={"title": "Buy milk", "done": True},
+        payload={"title": "Buy milk", "done": False},
         idempotency_key="idem-1",
     )
 
@@ -58,6 +58,21 @@ def test_sync_cursor_and_etag_flow():
     second_sync = backend.sync(user_id=user_id, cursor=first_sync["next_cursor"], etag=first_sync["etag"])
     assert second_sync["not_modified"] is True
     assert second_sync["changes"] == []
+
+
+def test_sync_cursor_tracks_global_change_sequence_not_item_version():
+    backend = create_backend()
+    user_id = backend.register_user("cursor-seq@example.com", "pw")["user_id"]
+
+    backend.upsert_item(user_id, "item-1", {"v": 1}, idempotency_key="s1")
+    first_page = backend.sync(user_id=user_id, cursor=0, limit=1)
+    assert len(first_page["changes"]) == 1
+    assert first_page["changes"][0]["item_id"] == "item-1"
+
+    backend.upsert_item(user_id, "item-2", {"v": 2}, idempotency_key="s2")
+    next_page = backend.sync(user_id=user_id, cursor=first_page["next_cursor"])
+    assert len(next_page["changes"]) == 1
+    assert next_page["changes"][0]["item_id"] == "item-2"
 
 
 def test_conflict_requires_merge_then_retry():
@@ -119,3 +134,25 @@ def test_network_retry_simulation_duplicate_delivery():
 
     assert first == second
     assert backend.sync(user_id)["changes"][0]["version"] == 1
+
+
+def test_reused_idempotency_key_with_different_payload_rejected():
+    backend = create_backend()
+    user_id = backend.register_user("idem-mismatch@example.com", "pw")["user_id"]
+
+    backend.upsert_item(
+        user_id=user_id,
+        item_id="idem-item",
+        payload={"count": 1},
+        idempotency_key="idem-shared",
+    )
+    with pytest.raises(ApiError) as exc:
+        backend.upsert_item(
+            user_id=user_id,
+            item_id="idem-item",
+            payload={"count": 2},
+            idempotency_key="idem-shared",
+        )
+
+    assert exc.value.code == "IDEMPOTENCY_PAYLOAD_MISMATCH"
+    assert exc.value.status == 409
