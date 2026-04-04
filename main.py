@@ -137,5 +137,10 @@ async def main(page: ft.Page):
 # Entry Point
 # =============================================================================
 
+def run_app() -> None:
+    """Start the Flet app using the expected run signature."""
+    ft.run(main)
+
+
 if __name__ == "__main__":
-    ft.run(target=main)
+    run_app()
