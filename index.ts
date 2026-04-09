@@ -1,9 +1,9 @@
 import { streamText } from 'ai';
-import 'dotenv/config';
-
-// Load .env.local explicitly (dotenv/config reads .env by default)
 import { config } from 'dotenv';
+
+// Load .env.local first, then .env. This allows .env.local to override .env.
 config({ path: '.env.local' });
+config();
 
 async function main() {
   console.log('🚀 Starting AI Gateway text generation...\n');
