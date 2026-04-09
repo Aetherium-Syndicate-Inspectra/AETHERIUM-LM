@@ -9,7 +9,7 @@ async function main() {
   console.log('🚀 Starting AI Gateway text generation...\n');
 
   const result = streamText({
-    model: 'openai/gpt-5.4',
+    model: process.env.AI_MODEL || 'openai/gpt-5.4',
     prompt: 'Invent a new holiday and describe its traditions.',
     // AI Gateway automatically uses AI_GATEWAY_API_KEY from environment
   });
