@@ -2,6 +2,7 @@ flet>=0.21.0
 litellm
 langchain-community
 openai
-python-dotenv
+python-dotenv>=1.2.2
 sqlalchemy
 aiosqlite
+aiohttp>=3.13.4
