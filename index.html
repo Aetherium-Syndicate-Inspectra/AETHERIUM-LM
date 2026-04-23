@@ -542,14 +542,15 @@
 
                         {/* API Key Input */}
                          <div className="mb-4">
+                         <div className="mb-4">
                             <input
                                 type="password"
                                 placeholder="Gemini API Key"
                                 className="glass-input w-full p-2 rounded text-xs font-mono"
-                                onChange={(e) => { apiKey = e.target.value; }}
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
                             />
                         </div>
-
                         {Object.values(FEATURES).map(feature => (
                             <div
                                 key={feature}
