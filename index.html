@@ -370,23 +370,15 @@
                 setIsGenerating(false);
             };
 
-            const copyToClipboard = () => {
-                const textarea = document.createElement("textarea");
-                textarea.value = generatedPrompt;
-                textarea.style.position = 'fixed';
-                textarea.style.left = '-9999px';
-                document.body.appendChild(textarea);
-                textarea.select();
+            const copyToClipboard = async () => {
                 try {
-                    document.execCommand('copy');
+                    await navigator.clipboard.writeText(generatedPrompt);
                     alert("Copied!");
                 } catch (e) {
                     console.error("Copy failed", e);
                     alert("Copy failed. Please select text manually.");
                 }
-                document.body.removeChild(textarea);
             };
-
             const getIcon = (feature) => {
                 switch(feature) {
                     case FEATURES.AUDIO: return "fa-headphones";
