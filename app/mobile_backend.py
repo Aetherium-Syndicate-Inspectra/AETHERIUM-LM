@@ -78,7 +78,7 @@ class MobileBackend:
     token_ttl_minutes: int = 60
     _users: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     _device_regs: Dict[str, DeviceRegistration] = field(default_factory=dict)
-    _sync_records: Dict[str, SyncRecord] = field(default_factory=dict)
+    _sync_records: Dict[Tuple[str, str], SyncRecord] = field(default_factory=dict)
     _idempotency: Dict[Tuple[str, str], IdempotentResponse] = field(default_factory=dict)
     _request_windows: Dict[str, List[float]] = field(default_factory=dict)
     _events: List[Dict[str, Any]] = field(default_factory=list)
@@ -161,10 +161,7 @@ class MobileBackend:
                 )
             return cached.body
 
-        current = self._sync_records.get(item_id)
-        if current and current.user_id != user_id:
-            raise ApiError("FORBIDDEN", "Item owned by another user", 403)
-
+        current = self._sync_records.get((user_id, item_id))
         if current and expected_version is not None and current.version != expected_version:
             raise ApiError(
                 "SYNC_CONFLICT",
@@ -185,7 +182,7 @@ class MobileBackend:
             updated_at=now,
             deleted=False,
         )
-        self._sync_records[item_id] = record
+        self._sync_records[(user_id, item_id)] = record
 
         body = {
             "item_id": item_id,

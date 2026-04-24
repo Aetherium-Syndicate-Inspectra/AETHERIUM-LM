@@ -55,15 +55,10 @@ A production-oriented mobile backend reference implementation is included in `ap
 
 See `docs/mobile_backend_api.md` for API contract and policies, and `scripts/simulate_duplicate_retry.py` for duplicate retry simulation.
 
-## Documentation language sections
+## Documentation summary (EN/TH)
 
-### English summary
-- Architecture and module scope are documented in `docs/mobile_backend_api.md` and `docs/architecture_reports/`.
-- Operational assumptions are aligned with tests in `tests/`.
-
-### สรุปภาษาไทย
-- สถาปัตยกรรมและขอบเขตโมดูลอธิบายใน `docs/mobile_backend_api.md` และ `docs/architecture_reports/`
-- สมมติฐานการทำงานของระบบอ้างอิงตรงกับชุดทดสอบใน `tests/`
+- EN: API contract and policies are documented in `docs/mobile_backend_api.md`; architecture snapshots are in `docs/architecture_reports/`.
+- TH: สัญญา API และนโยบายระบบอยู่ใน `docs/mobile_backend_api.md`; เอกสารภาพรวมสถาปัตยกรรมอยู่ใน `docs/architecture_reports/`
 
 ## Future roadmap (clear next steps)
 

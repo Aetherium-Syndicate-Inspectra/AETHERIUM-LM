@@ -156,3 +156,44 @@ def test_reused_idempotency_key_with_different_payload_rejected():
 
     assert exc.value.code == "IDEMPOTENCY_PAYLOAD_MISMATCH"
     assert exc.value.status == 409
+
+
+def test_same_item_id_isolated_per_user_namespace():
+    backend = create_backend()
+    user_a = backend.register_user("usera@example.com", "pw")["user_id"]
+    user_b = backend.register_user("userb@example.com", "pw")["user_id"]
+
+    a_record = backend.upsert_item(user_a, "shared-item", {"owner": "a"}, idempotency_key="a-1")
+    b_record = backend.upsert_item(user_b, "shared-item", {"owner": "b"}, idempotency_key="b-1")
+
+    assert a_record["version"] == 1
+    assert b_record["version"] == 1
+    assert backend.sync(user_a)["changes"][0]["payload"]["owner"] == "a"
+    assert backend.sync(user_b)["changes"][0]["payload"]["owner"] == "b"
+
+
+def test_authenticate_rejects_tampered_signature():
+    backend = create_backend()
+    backend.register_user("jwt-invalid@example.com", "pw")
+    token = backend.login("jwt-invalid@example.com", "pw")["access_token"]
+    header_b64, payload_b64, _signature = token.split(".")
+    tampered = f"{header_b64}.{payload_b64}.deadbeef"
+
+    with pytest.raises(ApiError) as exc:
+        backend.authenticate(tampered)
+
+    assert exc.value.status == 401
+    assert exc.value.code == "AUTH_INVALID_TOKEN"
+
+
+def test_authenticate_rejects_expired_token():
+    backend = create_backend()
+    backend.register_user("jwt-expired@example.com", "pw")
+    backend.token_ttl_minutes = -1
+    expired = backend.login("jwt-expired@example.com", "pw")["access_token"]
+
+    with pytest.raises(ApiError) as exc:
+        backend.authenticate(expired)
+
+    assert exc.value.status == 401
+    assert exc.value.code == "AUTH_EXPIRED"

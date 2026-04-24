@@ -1,7 +1,7 @@
 PROJECT STRUCTURE REPORT
 ========================
 
-This report provides a detailed breakdown of the file structure within the Aetherium LM codebase.
+This report provides a detailed breakdown of the file structure within the AETHERIUM-LM codebase.
 It describes the purpose and functionality of each key file, serving as a reference for the current system state.
 
 ROOT DIRECTORY
@@ -9,12 +9,11 @@ ROOT DIRECTORY
 
 File: main.py
 Description:
-    This is the main entry point of the application. It uses the Flet framework to render the User Interface (UI).
+    This is the main entry point of the demo application. It uses the Flet framework to render a chat-style User Interface (UI).
     It is responsible for:
-    - Setting up the mobile configuration console.
-    - Capturing user inputs (Provider, Model Name, API Key).
-    - Handling the "Validate & Save Config" event.
-    - Invoking the `validate_llm_config` function from the backend service to test connectivity.
+    - Rendering a local chat simulation view.
+    - Handling text + image attachment interactions.
+    - Returning simulated assistant messages for UI/demo purposes.
 
 File: requirements.txt
 Description:
