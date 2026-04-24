@@ -1,7 +1,7 @@
 # Data Flow Simulation
 
-This document provides a visual simulation of the data flow within the Aetherium LM system.
-It focuses on the interaction between the User Interface (UI), the internal Business Logic, and External Services.
+This document provides a visual simulation of the data flow within the AETHERIUM-LM demo UI.
+It focuses on the interaction between the User Interface (UI) state and user events.
 
 ## 1. High-Level System Architecture
 
@@ -12,87 +12,66 @@ graph TD
     %% Nodes
     User([User])
     UI[main.py <br/> (Flet UI)]
-    Service[app/services/llm_service.py <br/> (Business Logic)]
-    DB[(app/db.py <br/> Database)]
-    LiteLLM[LiteLLM Library <br/> (Abstraction Layer)]
-    Provider((External AI Provider <br/> OpenAI/Anthropic/etc.))
+    Service[main.py <br/> (UI Event Handlers)]
+    State[(In-memory UI state)]
+    Simulated[(Simulated assistant response)]
 
     %% Styles
     style UI fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style Service fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
-    style DB fill:#e0f2f1,stroke:#00695c,stroke-width:2px,shape:cylinder
-    style Provider fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style State fill:#e0f2f1,stroke:#00695c,stroke-width:2px,shape:cylinder
+    style Simulated fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 
     %% Flow
-    User -- "1. Enters Config & Clicks Validate" --> UI
-    UI -- "2. Sends Credentials" --> Service
-    Service -. "3. Fetches/Stores Config (Future)" .- DB
-    Service -- "4. Request Test Chat" --> LiteLLM
-    LiteLLM -- "5. API Request" --> Provider
-    Provider -- "6. API Response" --> LiteLLM
-    LiteLLM -- "7. Chat Result" --> Service
-    Service -- "8. Success/Failure Status" --> UI
-    UI -- "9. Updates Display" --> User
+    User -- "1. Types message / attaches image" --> UI
+    UI -- "2. Triggers send handler" --> Service
+    Service -- "3. Updates local state" --> State
+    Service -- "4. Builds simulated response" --> Simulated
+    Simulated -- "5. Render response" --> UI
+    UI -- "6. Updates display" --> User
 ```
 
 ### Description of Components
-- **User**: The person interacting with the mobile console.
-- **main.py (UI)**: The presentation layer. It does not contain business logic; it only handles display and user input.
-- **llm_service.py (Service)**: The brain of the operation. It knows how to talk to LLMs but doesn't care about the UI.
-- **LiteLLM**: A translation layer that converts our generic requests into specific API calls for different providers (OpenAI, Google, etc.).
-- **External AI Provider**: The actual cloud service processing the request.
+- **User**: The person interacting with the demo app.
+- **main.py (UI)**: Presentation + event handling for message submission and image attachment.
+- **In-memory UI state**: Holds selected image path and rendered message list.
+- **Simulated assistant response**: A local, non-network placeholder response.
 
 ---
 
-## 2. Validation Process Sequence
+## 2. Message Send Sequence
 
-This diagram details the specific sequence of events when a user validates a new LLM configuration.
+This diagram details the sequence when a user sends a chat message in the demo UI.
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Main as main.py (UI)
-    participant Service as llm_service.py
-    participant LiteLLM as ChatLiteLLM
-    participant API as External Provider (e.g., OpenAI)
+    participant Handler as send_message_click()
+    participant State as Local UI State
 
     Note over User, Main: UI Layer
-    User->>Main: Input: Provider="OPENAI", Key="sk-..."
-    User->>Main: Click "Validate & Save"
+    User->>Main: Type text and/or attach image
+    User->>Main: Click "Send"
 
     activate Main
     Main->>Main: Show Progress Bar
 
-    Note over Main, Service: Crossing into Business Logic
-    Main->>Service: validate_llm_config(provider, model, key)
-
-    activate Service
-    Service->>Service: Map Provider Name (e.g. "OPENAI" -> "openai")
-    Service->>LiteLLM: Initialize ChatLiteLLM(model="openai/gpt-4o", key=...)
-
-    Service->>LiteLLM: ainvoke(messages=[HumanMessage("Hello")])
-    activate LiteLLM
-
-    Note over LiteLLM, API: External Network Call
-    LiteLLM->>API: HTTP POST /v1/chat/completions
-    activate API
-    API-->>LiteLLM: 200 OK { "content": "Hello! How can I help?" }
-    deactivate API
-
-    LiteLLM-->>Service: AIMessage(content="Hello!...")
-    deactivate LiteLLM
-
-    Service-->>Main: return (True, "")
-    deactivate Service
+    Main->>Handler: call send_message_click()
+    activate Handler
+    Handler->>State: append user message
+    Handler->>State: clear input + preview state
+    Handler->>Handler: sleep(1.5) to simulate latency
+    Handler->>State: append simulated bot response
+    deactivate Handler
 
     Main->>Main: Hide Progress Bar
-    Main->>User: Display "✅ Success"
+    Main->>User: Display simulated response
     deactivate Main
 ```
 
 ### Flow Explanation
-1.  **Input**: The user provides credentials in the UI.
-2.  **Hand-off**: `main.py` passes these raw credentials to `llm_service.py`. It does *not* try to test them itself.
-3.  **Standardization**: `llm_service.py` converts the selection (e.g., "OPENAI") into a format LiteLLM understands (e.g., "openai/gpt-4o").
-4.  **Test**: A minimal "Hello" message is sent. This is a low-cost way to verify the API key is active.
-5.  **Result**: The result is a simple boolean (Success/Fail) passed back to the UI for display.
+1.  **Input**: The user enters text or selects an image.
+2.  **UI update**: `main.py` appends the user message and clears transient input state.
+3.  **Simulation**: The handler waits briefly, then composes a local response.
+4.  **Render**: The response is shown in the chat panel.
